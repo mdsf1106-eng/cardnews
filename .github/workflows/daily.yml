@@ -1,0 +1,71 @@
+name: 카드뉴스 자동 게시
+
+on:
+  schedule:
+    # cron은 UTC 기준이다. KST = UTC + 9
+    - cron: '0 23 * * *'   # 08:00 KST — 미국장 브리핑 (AM)
+    - cron: '0 9 * * *'    # 18:00 KST — 국내 경제 브리핑 (PM)
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: '슬롯 (am 또는 pm)'
+        required: true
+        default: 'pm'
+        type: choice
+        options: [am, pm]
+      news_file:
+        description: '특정 파일로 게시 (예: content/news_20260828_pm.json). 비우면 오늘 날짜로 자동 탐색'
+        required: false
+        type: string
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: 의존성 설치
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: 슬롯 결정
+        id: slot
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.slot }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 23 * * *" ]; then
+            echo "value=am" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=pm" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 게시
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_LONG_LIVED_TOKEN: ${{ secrets.IG_LONG_LIVED_TOKEN }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ secrets.CLOUDINARY_UPLOAD_PRESET }}
+          ACCOUNT_HANDLE: ${{ vars.ACCOUNT_HANDLE || 'itsue_issue' }}
+          NEWS_FILE: ${{ inputs.news_file }}
+        run: python pipeline/ci_publish.py ${{ steps.slot.outputs.value }}
+
+      - name: 생성된 카드 보관
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cards-${{ steps.slot.outputs.value }}-${{ github.run_number }}
+          path: out/*.png
+          if-no-files-found: ignore
+          retention-days: 14

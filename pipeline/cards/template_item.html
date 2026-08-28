@@ -1,0 +1,76 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@import url('_shared.css');
+.top-row{ display:flex; justify-content:space-between; align-items:center; }
+.idx{ font-size:24px; color:var(--muted); }
+.body-block{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:26px; padding-top:36px; }
+.head-row{ display:flex; align-items:flex-start; gap:28px; }
+.head-text{ flex:1; display:flex; flex-direction:column; gap:18px; }
+.accent-rule{ width:88px; height:5px; border-radius:3px; }
+.accent-rule.economy{ background:var(--amber); }
+.accent-rule.tech{ background:var(--teal); }
+h2{
+  font-family:'Nanum Myeongjo', serif;
+  font-weight:700;
+  font-size:58px;
+  line-height:1.32;
+  letter-spacing:-0.01em;
+  word-break:keep-all;
+}
+.summary{ font-size:29px; line-height:1.62; color:var(--body); max-width:900px; font-weight:400; word-break:keep-all; }
+
+.sowhat{
+  display:flex; gap:20px; align-items:flex-start;
+  margin-top:6px; padding-top:26px;
+  border-top:1px solid var(--line);
+}
+.sowhat .mark{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:22px; font-weight:600; letter-spacing:0.04em;
+  padding:7px 14px; border-radius:8px;
+  border:1px solid currentColor;
+  flex-shrink:0; margin-top:5px;
+}
+.sowhat .mark.economy{ color:var(--amber); background:var(--amber-soft); }
+.sowhat .mark.tech{ color:var(--teal); background:var(--teal-soft); }
+.sowhat .txt{
+  font-size:30px; line-height:1.58; font-weight:500;
+  color:var(--ink); max-width:800px; word-break:keep-all;
+}
+.source{ font-size:20px; color:var(--muted); }
+.bottom-row{ display:flex; justify-content:space-between; align-items:flex-end; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top-row">
+      <span class="tag __CATCLASS__">__CATLABEL__</span>
+      <span class="idx mono">__INDEX__ / __TOTAL__</span>
+    </div>
+
+    <div class="body-block">
+      <div class="head-row">
+        <div class="icon-chip __CATCLASS__">__ICON_SVG__</div>
+        <div class="head-text">
+          <div class="accent-rule __CATCLASS__"></div>
+          <h2>__TITLE__</h2>
+        </div>
+      </div>
+      <div class="summary">__SUMMARY__</div>
+      <!--SOWHAT_START-->
+      <div class="sowhat">
+        <span class="mark __CATCLASS__">그래서</span>
+        <span class="txt">__SOWHAT__</span>
+      </div>
+      <!--SOWHAT_END-->
+    </div>
+
+    <div class="rule"></div>
+    <div class="bottom-row" style="padding-top:22px;">
+      <span class="source mono">__SOURCE__</span>
+      <span class="handle">@__HANDLE__</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@import url('_shared.css');
+.top-row{ display:flex; justify-content:space-between; align-items:center; }
+.eyebrow{ font-size:24px; color:var(--muted); }
+.date{ font-size:24px; color:var(--muted); }
+
+.hot-tag{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:23px; font-weight:600; letter-spacing:0.04em;
+  padding:9px 18px;
+  border-radius:999px;
+  background:var(--amber);
+  color:#1a1204;
+  width:fit-content;
+}
+.hot-tag .dot{ width:8px; height:8px; border-radius:50%; background:#1a1204; }
+
+.title-block{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:26px; padding-top:20px; }
+h1{
+  font-family:'Nanum Myeongjo', serif;
+  font-weight:800;
+  font-size:96px;
+  line-height:1.18;
+  letter-spacing:-0.015em;
+  max-width:940px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+}
+h1 .accent{ color:var(--amber); }
+.sub{ font-size:30px; color:var(--muted); font-weight:500; max-width:820px; word-break:keep-all; }
+
+.chart-card{
+  display:flex; align-items:center; gap:28px;
+  background:var(--card-bg);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:22px 26px;
+  width:fit-content;
+}
+.chart-card svg{ display:block; }
+.chart-stat{ display:flex; flex-direction:column; gap:6px; }
+.chart-stat .label{ font-family:'IBM Plex Mono', monospace; font-size:19px; color:var(--muted); letter-spacing:0.03em; }
+.chart-stat .value{ font-family:'IBM Plex Mono', monospace; font-size:34px; font-weight:600; color:var(--ink); }
+.chart-stat .value.up{ color:var(--amber); }
+.chart-stat .lowmark{ font-family:'IBM Plex Mono', monospace; font-size:17px; color:#e8664a; }
+
+.tags{ display:flex; gap:14px; flex-wrap:wrap; }
+.bottom-row{ display:flex; justify-content:space-between; align-items:flex-end; }
+.count{ font-family:'IBM Plex Mono', monospace; font-size:24px; color:var(--muted); }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top-row">
+      <span class="eyebrow mono">DAILY BRIEF · ECONOMY &amp; TECH</span>
+      <span class="date mono">__DATE__</span>
+    </div>
+
+    <div class="title-block">
+      <span class="hot-tag"><span class="dot"></span>오늘의 헤드라인</span>
+      <h1>__HEADLINE__</h1>
+      <div class="sub">__SUBHEAD__</div>
+      <!--CHART_BLOCK_START-->
+      <div class="chart-card">
+        <svg width="220" height="90" viewBox="0 0 220 90">
+          <defs>
+            <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="__CHART_COLOR__" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="__CHART_COLOR__" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="__CHART_PATH_FILL__" fill="url(#fillGrad)"/>
+          <path d="__CHART_PATH_LINE__" fill="none" stroke="__CHART_COLOR__" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="__CHART_LOW_X__" cy="__CHART_LOW_Y__" r="5" fill="__CHART_LOW_COLOR__"/>
+          <circle cx="220" cy="__CHART_END_Y__" r="5.5" fill="__CHART_COLOR__"/>
+        </svg>
+        <div class="chart-stat">
+          <span class="label">__CHART_LABEL__</span>
+          <span class="value up">__CHART_VALUE__</span>
+          <span class="lowmark">__CHART_LOW__</span>
+        </div>
+      </div>
+      <!--CHART_BLOCK_END-->
+    </div>
+
+    <div class="rule"></div>
+    <div class="bottom-row" style="padding-top:22px;">
+      <span class="handle">@__HANDLE__</span>
+      <span class="count">오늘의 이슈 __COUNT__가지 →</span>
+    </div>
+  </div>
+</body>
+</html>

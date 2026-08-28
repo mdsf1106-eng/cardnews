@@ -1,0 +1,69 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@import url('_shared.css');
+.top-row{ display:flex; justify-content:space-between; align-items:center; }
+.eyebrow{ font-size:24px; color:var(--muted); }
+.date{ font-size:24px; color:var(--muted); }
+
+.hook-block{
+  flex:1; display:flex; flex-direction:column; justify-content:center;
+  gap:30px; padding-top:20px;
+}
+.hook-label{
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:23px; font-weight:600; letter-spacing:0.04em;
+  color:var(--amber);
+  width:fit-content;
+}
+.hook-label .bar{ width:34px; height:3px; background:var(--amber); border-radius:2px; }
+
+.hook-statement{
+  display:flex; gap:30px; align-items:stretch;
+}
+.hook-statement .rail{
+  width:5px; border-radius:3px; background:var(--amber); flex-shrink:0;
+}
+.hook-statement h2{
+  font-family:'Nanum Myeongjo', serif;
+  font-weight:800;
+  font-size:88px;
+  line-height:1.22;
+  letter-spacing:-0.02em;
+  max-width:900px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+}
+.hook-note{
+  font-size:29px; line-height:1.6; color:var(--body);
+  max-width:860px; word-break:keep-all;
+}
+.bottom-row{ display:flex; justify-content:space-between; align-items:flex-end; }
+.swipe{ font-family:'IBM Plex Mono', monospace; font-size:24px; color:var(--muted); }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top-row">
+      <span class="eyebrow mono">DAILY BRIEF · ECONOMY &amp; TECH</span>
+      <span class="date mono">__DATE__</span>
+    </div>
+
+    <div class="hook-block">
+      <span class="hook-label"><span class="bar"></span>__HOOK_LABEL__</span>
+      <div class="hook-statement">
+        <div class="rail"></div>
+        <h2>__HOOK_LINE__</h2>
+      </div>
+      <div class="hook-note">__HOOK_NOTE__</div>
+    </div>
+
+    <div class="rule"></div>
+    <div class="bottom-row" style="padding-top:22px;">
+      <span class="handle">@__HANDLE__</span>
+      <span class="swipe">이슈 __COUNT__개 넘겨보기 →</span>
+    </div>
+  </div>
+</body>
+</html>

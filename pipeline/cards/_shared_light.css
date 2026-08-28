@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --bg:#f7f4ea;
+  --bg2:#efe9d8;
+  --ink:#1a1d24;
+  --muted:#6b7080;
+  --amber:#c2790f;
+  --amber-soft:rgba(194,121,15,0.12);
+  --teal:#0e8f83;
+  --teal-soft:rgba(14,143,131,0.12);
+  --line:rgba(26,29,36,0.14);
+  --grid:rgba(26,29,36,0.04);
+  --card-bg:rgba(26,29,36,0.035);
+  --avatar-a:#ffffff;
+  --avatar-b:#efe9d8;
+  --frame:#a8701f;
+  --body:#3a3d45;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ width:1080px; height:1350px; overflow:hidden; }
+body{
+  background:
+    linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  background-image:
+    repeating-linear-gradient(0deg, var(--grid) 0px, var(--grid) 1px, transparent 1px, transparent 90px),
+    repeating-linear-gradient(90deg, var(--grid) 0px, var(--grid) 1px, transparent 1px, transparent 90px),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  color:var(--ink);
+  font-family:'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  position:relative;
+}
+.frame{
+  position:absolute; inset:64px;
+  display:flex; flex-direction:column;
+}
+
+/* 피드 경계 프레임 —— 다크모드 피드(검정)와 라이트모드 피드(흰색) 양쪽에서
+   카드 가장자리가 배경에 녹아버리는 것을 막는다.
+   측정 결과: 테두리 없는 네이비는 다크 피드에서 경계 대비 1.18 (사실상 소멸),
+   6px 프레임 적용 시 최악 조건에서도 4.16 확보. */
+body::after{
+  content:""; position:absolute; inset:0;
+  border:8px solid var(--frame);
+  pointer-events:none;
+}
+.frame{ inset:72px; }
+
+.mono{
+  font-family:'IBM Plex Mono', monospace;
+  letter-spacing:0.04em;
+}
+.serif{ font-family:'Nanum Myeongjo', serif; }
+
+.tag{
+  display:inline-flex; align-items:center;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:22px;
+  font-weight:600;
+  letter-spacing:0.05em;
+  padding:8px 16px;
+  border-radius:999px;
+  border:1px solid var(--line);
+}
+.tag.economy{ color:var(--amber); background:var(--amber-soft); border-color:rgba(194,121,15,0.35); }
+.tag.tech{ color:var(--teal); background:var(--teal-soft); border-color:rgba(14,143,131,0.35); }
+
+.handle{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:22px;
+  color:var(--muted);
+  letter-spacing:0.03em;
+}
+.rule{ height:1px; background:var(--line); width:100%; }
+
+.hl{ font-weight:800; }
+.hl.economy{ color:var(--amber); }
+.hl.tech{ color:var(--teal); }
+
+.icon-chip{
+  width:88px; height:88px;
+  border-radius:20px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  background:var(--card-bg);
+  border:1px solid var(--line);
+}
+.icon-chip.economy{ background:var(--amber-soft); border-color:rgba(194,121,15,0.3); }
+.icon-chip.tech{ background:var(--teal-soft); border-color:rgba(14,143,131,0.3); }
+.icon-chip svg{ display:block; }

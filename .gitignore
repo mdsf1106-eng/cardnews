@@ -1,0 +1,5 @@
+out/
+*.png
+__pycache__/
+config.json
+.env

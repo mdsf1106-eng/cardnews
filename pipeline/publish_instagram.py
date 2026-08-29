@@ -86,3 +86,44 @@ def publish_carousel(user_id: str, image_urls: list[str], caption: str, access_t
     permalink = resp.json().get("permalink")
 
     return {"id": media_id, "permalink": permalink}
+
+
+def publish_reel(user_id: str, video_url: str, caption: str, access_token: str,
+                 cover_url: str | None = None, share_to_feed: bool = True) -> dict:
+    """릴스(단일 영상)를 게시하고 {"id": media_id, "permalink": url}를 반환한다.
+
+    cover_url을 주면 그 이미지가 프로필 그리드 썸네일이 된다.
+    (영상 첫 프레임을 그대로 쓰면 9:16을 4:5로 잘라내면서 표지 상단이 잘린다.)
+    """
+    data = {
+        "media_type": "REELS",
+        "video_url": video_url,
+        "caption": caption,
+        "share_to_feed": "true" if share_to_feed else "false",
+        "access_token": access_token,
+    }
+    if cover_url:
+        data["cover_url"] = cover_url
+
+    resp = requests.post(f"{GRAPH}/{user_id}/media", data=data, timeout=60)
+    resp.raise_for_status()
+    container_id = resp.json()["id"]
+
+    # 영상 트랜스코딩은 이미지보다 오래 걸린다
+    _wait_until_finished(container_id, access_token, timeout_s=600)
+
+    resp = requests.post(
+        f"{GRAPH}/{user_id}/media_publish",
+        data={"creation_id": container_id, "access_token": access_token},
+        timeout=60,
+    )
+    resp.raise_for_status()
+    media_id = resp.json()["id"]
+
+    resp = requests.get(
+        f"{GRAPH}/{media_id}",
+        params={"fields": "permalink", "access_token": access_token},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return {"id": media_id, "permalink": resp.json().get("permalink")}

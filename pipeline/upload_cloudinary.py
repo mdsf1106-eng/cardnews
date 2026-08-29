@@ -28,3 +28,19 @@ if __name__ == "__main__":
     pngs = sorted(out_dir.glob("*.png"))
     urls = upload_all(pngs, cfg["cloudinary"]["cloud_name"], cfg["cloudinary"]["upload_preset"])
     print("\n".join(urls))
+
+
+def upload_video(path, cloud_name: str, upload_preset: str) -> str:
+    """MP4 한 개를 Cloudinary에 올리고 공개 URL을 반환한다."""
+    from pathlib import Path as _P
+    p = _P(path)
+    url = f"https://api.cloudinary.com/v1_1/{cloud_name}/video/upload"
+    with open(p, "rb") as f:
+        resp = requests.post(
+            url,
+            data={"upload_preset": upload_preset},
+            files={"file": (p.name, f, "video/mp4")},
+            timeout=300,
+        )
+    resp.raise_for_status()
+    return resp.json()["secure_url"]

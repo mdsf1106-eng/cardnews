@@ -76,10 +76,30 @@ def main():
     fmt = news.get("format", "carousel_video").lower()
     reel_path = None
     clips = []
+
+    # 배경음악(선택): assets/bgm/ 안의 음원. news.json의 "bgm"으로 파일명을 지정하거나
+    # 비워두면 폴더의 첫 번째 파일을 쓴다. 없으면 무음.
+    # ⚠️ Meta 사운드 컬렉션(facebook.com/sound)에서 받은 음원만 쓸 것.
+    #    그 라이선스만 인스타·페북 게시에서 상업적 사용까지 커버한다.
+    bgm = None
+    bgm_dir = ROOT / "assets" / "bgm"
+    named = (news.get("bgm") or "").strip()
+    if named:
+        cand = bgm_dir / named
+        bgm = cand if cand.exists() else None
+        if bgm is None:
+            print(f"[warn] bgm 파일을 찾지 못했습니다: assets/bgm/{named} — 무음으로 진행합니다.")
+    elif bgm_dir.is_dir():
+        found = sorted(f for f in bgm_dir.iterdir()
+                       if f.suffix.lower() in (".mp3", ".m4a", ".wav", ".aac"))
+        bgm = found[0] if found else None
+    if bgm:
+        print(f"[info] 배경음악: assets/bgm/{bgm.name}")
     if fmt == "carousel_video":
         clips = build_card_clips(
             paths, out_dir,
             seconds=(news.get("clip") or {}).get("seconds", 5.0),
+            bgm=bgm,
         )
         print(f"[info] 카드별 영상 {len(clips)}개 생성 -> out/*.mp4")
     elif fmt == "reel":
@@ -87,6 +107,7 @@ def main():
             paths, out_dir / "reel.mp4",
             theme=news.get("theme", "dark"),
             durations=(news.get("reel") or {}).get("durations"),
+            bgm=bgm,
         )
         print(f"[info] 릴스 영상 생성 -> out/{reel_path.name}")
 

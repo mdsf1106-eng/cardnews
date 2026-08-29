@@ -36,6 +36,29 @@ DEFAULT_DURATIONS = {
 }
 
 
+def _audio_input(bgm, seconds: float, offset: float = 0.0) -> list[str]:
+    """ffmpeg 오디오 입력 인자. bgm이 없으면 무음 트랙을 만든다.
+
+    bgm은 Meta 사운드 컬렉션(facebook.com/sound)에서 받은 음원을 쓴다.
+    그 라이선스는 페이스북·인스타그램 게시에 한해 상업적 사용까지 허용한다.
+    """
+    if not bgm:
+        return ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100"]
+    args = ["-stream_loop", "-1"]          # 음원이 짧으면 반복
+    if offset:
+        args += ["-ss", f"{offset:.2f}"]
+    return args + ["-i", str(bgm)]
+
+
+def _audio_filter(bgm, seconds: float, volume: float = 0.85) -> list[str]:
+    """bgm이 있을 때만 볼륨 조정 + 끝에서 페이드아웃."""
+    if not bgm:
+        return []
+    fade_d = min(1.2, seconds / 4)
+    st = max(0.0, seconds - fade_d)
+    return ["-af", f"volume={volume},afade=t=out:st={st:.2f}:d={fade_d:.2f}"]
+
+
 def _hex(c: str) -> tuple[int, int, int]:
     c = c.lstrip("#")
     return tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))
@@ -61,7 +84,7 @@ def _kind(path: Path) -> str:
 
 
 def build_reel(paths: list[Path], out_path: Path, theme: str = "dark",
-               durations: dict | None = None) -> Path:
+               durations: dict | None = None, bgm=None) -> Path:
     """PNG 목록을 순서대로 이어붙인 릴스 MP4를 만들고 경로를 반환한다."""
     if not paths:
         raise ValueError("카드가 없습니다.")
@@ -97,13 +120,15 @@ def build_reel(paths: list[Path], out_path: Path, theme: str = "dark",
     cmd = [
         "ffmpeg", "-y",
         "-f", "concat", "-safe", "0", "-i", str(list_file),
-        # 무음 오디오 트랙 — 없으면 일부 플레이어/업로드 경로에서 문제가 생긴다
-        "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+        # 오디오 트랙 — bgm이 없으면 무음. 오디오 스트림 자체가 없으면
+        # 일부 플레이어/업로드 경로에서 문제가 생기므로 항상 넣는다.
+        *_audio_input(bgm, total),
         "-map", "0:v", "-map", "1:a",
         "-c:v", "libx264", "-preset", "medium", "-crf", "20",
         "-pix_fmt", "yuv420p", "-r", str(FPS),
         "-vsync", "cfr",
         "-c:a", "aac", "-b:a", "128k",
+        *_audio_filter(bgm, total),
         "-t", f"{total:.2f}",
         "-movflags", "+faststart",
         str(out_path),
@@ -133,7 +158,7 @@ CLIP_SECONDS = 5.0
 
 
 def build_card_clips(paths: list[Path], out_dir: Path,
-                     seconds: float = CLIP_SECONDS) -> list[Path]:
+                     seconds: float = CLIP_SECONDS, bgm=None) -> list[Path]:
     """카드 PNG 한 장당 MP4 한 개를 만들어 경로 목록(순서 유지)을 반환한다."""
     if shutil.which("ffmpeg") is None:
         raise RuntimeError("ffmpeg가 없습니다. 러너에 ffmpeg를 설치하세요.")
@@ -142,17 +167,20 @@ def build_card_clips(paths: list[Path], out_dir: Path,
 
     seconds = max(3.0, float(seconds))   # 인스타 최소 3초
     clips = []
-    for p in paths:
+    for i, p in enumerate(paths):
         out = out_dir / f"{p.stem}.mp4"
+        # bgm이 있으면 슬라이드마다 곡의 다음 구간을 쓴다 —
+        # 넘길 때마다 처음부터 다시 시작하지 않고 이어지는 느낌이 난다.
         cmd = [
             "ffmpeg", "-y",
             "-loop", "1", "-i", str(p),
-            "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+            *_audio_input(bgm, seconds, offset=i * seconds),
             "-map", "0:v", "-map", "1:a",
             "-t", f"{seconds:.2f}",
             "-c:v", "libx264", "-preset", "medium", "-crf", "20",
             "-pix_fmt", "yuv420p", "-r", "30",
             "-c:a", "aac", "-b:a", "128k",
+            *_audio_filter(bgm, seconds),
             "-movflags", "+faststart",
             str(out),
         ]

@@ -8,7 +8,9 @@ GitHub Actions 진입점.
 동작:
   1) 오늘 날짜(KST)와 슬롯(am/pm)에 해당하는 content/news_YYYYMMDD_{slot}.json 을 찾는다
   2) 없으면 조용히 종료 (콘텐츠를 아직 안 만든 날 워크플로가 실패로 뜨지 않게)
-  3) 검증 -> 카드 생성 -> Cloudinary 업로드 -> 인스타 캐러셀 게시
+  3) 검증 -> 카드 생성 (여기까지는 시크릿 없이도 동작)
+  4) 시크릿이 모두 있으면 Cloudinary 업로드 -> 인스타 캐러셀 게시
+     없으면 생성만 하고 종료 (PNG는 Actions 아티팩트로 남는다)
 """
 import json
 import os
@@ -25,13 +27,6 @@ from validate_news import validate
 
 ROOT = Path(__file__).resolve().parent.parent
 KST = timezone(timedelta(hours=9))
-
-
-def need(name: str) -> str:
-    v = os.environ.get(name, "").strip()
-    if not v:
-        sys.exit(f"[error] 시크릿 {name} 이(가) 비어 있습니다. 레포 Settings > Secrets에서 등록하세요.")
-    return v
 
 
 def pick_news_file() -> Path | None:
@@ -64,13 +59,34 @@ def main():
             print(f"[error] {e}")
         sys.exit("[error] 검증 실패로 게시를 중단합니다.")
 
-    ig_user = need("IG_USER_ID")
-    token = need("IG_LONG_LIVED_TOKEN")
-    cloud = need("CLOUDINARY_CLOUD_NAME")
-    preset = need("CLOUDINARY_UPLOAD_PRESET")
     handle = os.environ.get("ACCOUNT_HANDLE", "itsue_issue")
 
-    # 2) 토큰 갱신 시도 (실패해도 기존 토큰으로 진행)
+    # 2) 카드 생성 — 게시 자격증명이 없어도 여기까지는 항상 수행한다.
+    #    (Actions 아티팩트로 PNG가 남으므로 수동 업로드가 가능하다)
+    out_dir = ROOT / "out"
+    paths = generate(news, out_dir, handle)
+    print(f"[info] 카드 {len(paths)}장 생성 -> out/")
+
+    # 3) 게시 자격증명 확인. 하나라도 없으면 생성만 하고 정상 종료.
+    creds = {k: os.environ.get(k, "").strip()
+             for k in ("IG_USER_ID", "IG_LONG_LIVED_TOKEN",
+                       "CLOUDINARY_CLOUD_NAME", "CLOUDINARY_UPLOAD_PRESET")}
+    missing = [k for k, v in creds.items() if not v]
+    dry = os.environ.get("DRY_RUN", "").strip().lower() in ("1", "true", "yes")
+
+    if dry or missing:
+        why = "DRY_RUN 지정" if dry else f"시크릿 미등록: {', '.join(missing)}"
+        print(f"[skip] 자동 게시를 건너뜁니다 ({why}).")
+        print("[info] 카드 PNG는 이 실행의 Artifacts에서 내려받아 수동 게시할 수 있습니다.")
+        print("--- 캡션 ---")
+        print(news.get("caption", ""))
+        print("--- 캡션 끝 ---")
+        return
+
+    ig_user, token = creds["IG_USER_ID"], creds["IG_LONG_LIVED_TOKEN"]
+    cloud, preset = creds["CLOUDINARY_CLOUD_NAME"], creds["CLOUDINARY_UPLOAD_PRESET"]
+
+    # 4) 토큰 갱신 시도 (실패해도 기존 토큰으로 진행)
     try:
         refreshed = refresh_long_lived_token(token)
         token = refreshed["access_token"]
@@ -80,16 +96,11 @@ def main():
     except Exception as e:
         print(f"[warn] 토큰 갱신 실패(무시하고 진행): {e}")
 
-    # 3) 카드 생성
-    out_dir = ROOT / "out"
-    paths = generate(news, out_dir, handle)
-    print(f"[info] 카드 {len(paths)}장 생성")
-
-    # 4) 이미지 호스팅 업로드
+    # 5) 이미지 호스팅 업로드
     urls = upload_all(paths, cloud, preset)
     print(f"[info] {len(urls)}장 업로드 완료")
 
-    # 5) 인스타 게시
+    # 6) 인스타 게시
     res = publish_carousel(
         user_id=ig_user, image_urls=urls,
         caption=news.get("caption", ""), access_token=token,

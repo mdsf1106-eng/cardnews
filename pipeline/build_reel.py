@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
-카드 PNG 세트 -> 릴스용 MP4 (1080x1920, 정지 화면, 무음 트랙 포함)
+카드 PNG -> MP4. 두 가지 출력을 만든다.
+
+1) build_card_clips()  카드 한 장 = MP4 한 개 (1080x1350). 캐러셀에 영상 슬라이드로 올린다.
+2) build_reel()        카드 전체를 이어붙인 한 개의 릴스 MP4 (1080x1920).
+
+둘 다 정지 화면이고 무음 오디오 트랙을 넣는다.
 
 카드는 그대로 두고 파일 형식만 영상으로 바꾼다.
 1080x1350 카드를 1080x1920 캔버스 위에 얹되, 배경은 카드와 같은 그라데이션으로 채워
@@ -119,3 +124,40 @@ if __name__ == "__main__":
     theme = sys.argv[2] if len(sys.argv) > 2 else "dark"
     pngs = sorted(out_dir.glob("[0-9][0-9]_*.png"))
     print(build_reel(pngs, out_dir / "reel.mp4", theme))
+
+
+# ── 카드별 개별 클립 ──────────────────────────────────────────────
+# 캐러셀 슬라이드용. 카드 크기(1080x1350) 그대로, 패딩 없음.
+# 인스타 영상 슬라이드는 최소 3초여야 해서 기본 5초로 잡는다.
+CLIP_SECONDS = 5.0
+
+
+def build_card_clips(paths: list[Path], out_dir: Path,
+                     seconds: float = CLIP_SECONDS) -> list[Path]:
+    """카드 PNG 한 장당 MP4 한 개를 만들어 경로 목록(순서 유지)을 반환한다."""
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError("ffmpeg가 없습니다. 러너에 ffmpeg를 설치하세요.")
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    seconds = max(3.0, float(seconds))   # 인스타 최소 3초
+    clips = []
+    for p in paths:
+        out = out_dir / f"{p.stem}.mp4"
+        cmd = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-i", str(p),
+            "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+            "-map", "0:v", "-map", "1:a",
+            "-t", f"{seconds:.2f}",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+            "-pix_fmt", "yuv420p", "-r", "30",
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            str(out),
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise RuntimeError(f"ffmpeg 실패({p.name}):\n{proc.stderr[-1500:]}")
+        clips.append(out)
+    return clips

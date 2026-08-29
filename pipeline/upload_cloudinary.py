@@ -44,3 +44,8 @@ def upload_video(path, cloud_name: str, upload_preset: str) -> str:
         )
     resp.raise_for_status()
     return resp.json()["secure_url"]
+
+
+def upload_videos(paths, cloud_name: str, upload_preset: str) -> list[str]:
+    """MP4 여러 개를 순서대로 올리고 공개 URL 목록을 반환한다."""
+    return [upload_video(p, cloud_name, upload_preset) for p in paths]

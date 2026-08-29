@@ -21,9 +21,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from generate_cards import generate
-from build_reel import build_reel
-from upload_cloudinary import upload_all, upload_video
-from publish_instagram import publish_carousel, publish_reel, refresh_long_lived_token
+from build_reel import build_reel, build_card_clips
+from upload_cloudinary import upload_all, upload_video, upload_videos
+from publish_instagram import (publish_carousel, publish_reel,
+                               publish_video_carousel, refresh_long_lived_token)
 from validate_news import validate
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -68,10 +69,20 @@ def main():
     paths = generate(news, out_dir, handle)
     print(f"[info] 카드 {len(paths)}장 생성 -> out/")
 
-    # format: "reel"(기본) = 카드를 그대로 이어붙인 정지화면 MP4 / "carousel" = 기존 이미지 캐러셀
-    fmt = news.get("format", "reel").lower()
+    # format
+    #   "carousel_video"(기본) 카드 한 장 = MP4 한 개 -> 영상 캐러셀로 피드 게시
+    #   "reel"                 카드 전체를 이어붙인 MP4 한 개 -> 릴스 게시
+    #   "carousel"             기존 PNG 이미지 캐러셀
+    fmt = news.get("format", "carousel_video").lower()
     reel_path = None
-    if fmt == "reel":
+    clips = []
+    if fmt == "carousel_video":
+        clips = build_card_clips(
+            paths, out_dir,
+            seconds=(news.get("clip") or {}).get("seconds", 5.0),
+        )
+        print(f"[info] 카드별 영상 {len(clips)}개 생성 -> out/*.mp4")
+    elif fmt == "reel":
         reel_path = build_reel(
             paths, out_dir / "reel.mp4",
             theme=news.get("theme", "dark"),
@@ -89,7 +100,8 @@ def main():
     if dry or missing:
         why = "DRY_RUN 지정" if dry else f"시크릿 미등록: {', '.join(missing)}"
         print(f"[skip] 자동 게시를 건너뜁니다 ({why}).")
-        made = "릴스 MP4와 카드 PNG" if fmt == "reel" else "카드 PNG"
+        made = {"carousel_video": "카드별 MP4와 PNG",
+                "reel": "릴스 MP4와 카드 PNG"}.get(fmt, "카드 PNG")
         print(f"[info] {made}는 이 실행의 Artifacts에서 내려받아 수동 게시할 수 있습니다.")
         print("--- 캡션 ---")
         print(news.get("caption", ""))
@@ -110,7 +122,14 @@ def main():
         print(f"[warn] 토큰 갱신 실패(무시하고 진행): {e}")
 
     # 5) 호스팅 업로드 + 6) 인스타 게시
-    if fmt == "reel":
+    if fmt == "carousel_video":
+        video_urls = upload_videos(clips, cloud, preset)
+        print(f"[info] 영상 {len(video_urls)}개 업로드 완료")
+        res = publish_video_carousel(
+            user_id=ig_user, video_urls=video_urls,
+            caption=news.get("caption", ""), access_token=token,
+        )
+    elif fmt == "reel":
         video_url = upload_video(reel_path, cloud, preset)
         # 표지 PNG를 커버로 지정 — 영상 첫 프레임을 쓰면 그리드에서 상단이 잘린다
         cover_url = upload_all([paths[0]], cloud, preset)[0]

@@ -28,6 +28,21 @@ def _create_child_container(user_id: str, image_url: str, access_token: str) -> 
     return resp.json()["id"]
 
 
+def _create_video_child(user_id: str, video_url: str, access_token: str) -> str:
+    resp = requests.post(
+        f"{GRAPH}/{user_id}/media",
+        data={
+            "media_type": "VIDEO",
+            "video_url": video_url,
+            "is_carousel_item": "true",
+            "access_token": access_token,
+        },
+        timeout=60,
+    )
+    resp.raise_for_status()
+    return resp.json()["id"]
+
+
 def _wait_until_finished(container_id: str, access_token: str, timeout_s: int = 120):
     deadline = time.time() + timeout_s
     while time.time() < deadline:
@@ -115,6 +130,50 @@ def publish_reel(user_id: str, video_url: str, caption: str, access_token: str,
     resp = requests.post(
         f"{GRAPH}/{user_id}/media_publish",
         data={"creation_id": container_id, "access_token": access_token},
+        timeout=60,
+    )
+    resp.raise_for_status()
+    media_id = resp.json()["id"]
+
+    resp = requests.get(
+        f"{GRAPH}/{media_id}",
+        params={"fields": "permalink", "access_token": access_token},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return {"id": media_id, "permalink": resp.json().get("permalink")}
+
+
+def publish_video_carousel(user_id: str, video_urls: list[str], caption: str,
+                           access_token: str) -> dict:
+    """슬라이드가 전부 영상인 캐러셀(2~10개)을 게시한다.
+
+    카드 한 장 = MP4 한 개. 피드에는 캐러셀로 올라간다(릴스 탭이 아니다).
+    """
+    if not (2 <= len(video_urls) <= 10):
+        raise ValueError("캐러셀은 2~10개여야 합니다.")
+
+    child_ids = [_create_video_child(user_id, u, access_token) for u in video_urls]
+    for cid in child_ids:
+        _wait_until_finished(cid, access_token, timeout_s=600)  # 영상은 오래 걸린다
+
+    resp = requests.post(
+        f"{GRAPH}/{user_id}/media",
+        data={
+            "media_type": "CAROUSEL",
+            "children": ",".join(child_ids),
+            "caption": caption,
+            "access_token": access_token,
+        },
+        timeout=60,
+    )
+    resp.raise_for_status()
+    parent_id = resp.json()["id"]
+    _wait_until_finished(parent_id, access_token, timeout_s=600)
+
+    resp = requests.post(
+        f"{GRAPH}/{user_id}/media_publish",
+        data={"creation_id": parent_id, "access_token": access_token},
         timeout=60,
     )
     resp.raise_for_status()

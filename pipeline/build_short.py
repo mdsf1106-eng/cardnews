@@ -18,6 +18,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 from generate_cards import esc, rich, _inline_css, _fit_block
+from build_chart import render_chart
 
 HERE = Path(__file__).parent
 CARDS = HERE / "cards"
@@ -29,6 +30,34 @@ MAX_FONT_PHOTO, MAX_FONT_TEXT = 76, 112
 # 쇼츠는 상단에 제목, 하단에 설명·버튼이 겹친다. 안전하게 쓸 수 있는 세로 구간.
 SAFE_TOP, SAFE_BOTTOM = 150, 1600
 DEFAULT_SECONDS = 5.0
+
+
+def _resolve_photo(src: str, out_dir: Path, idx: int, base_dir: Path | None):
+    """로컬 경로 또는 URL을 받아 로컬 파일 경로로 돌려준다.
+
+    URL은 빌드 시점에 내려받는다 (GitHub Actions 러너는 외부망이 열려 있다).
+    ⚠️ 공공누리 제1유형·CC 라이선스 등 상업적 이용이 허용된 출처만 쓸 것.
+       언론사 보도사진(나무위키 등에 올라온 것 포함)은 저작권 침해다.
+    """
+    if str(src).startswith(("http://", "https://")):
+        import urllib.request
+        ext = Path(str(src).split("?")[0]).suffix.lower() or ".jpg"
+        if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+            ext = ".jpg"
+        dst = out_dir / f"photo{idx:02d}{ext}"
+        try:
+            req = urllib.request.Request(src, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=30) as r, open(dst, "wb") as f:
+                f.write(r.read())
+            return dst
+        except Exception as e:
+            print(f"[warn] 사진을 받지 못했습니다({src}): {e} — 글자만으로 만듭니다.")
+            return None
+    p = (base_dir / src) if base_dir else Path(src)
+    if not p.exists():
+        print(f"[warn] 사진을 찾지 못했습니다: {p} — 글자만으로 만듭니다.")
+        return None
+    return p
 
 
 def _data_uri(path: Path) -> str:
@@ -72,16 +101,24 @@ def render_scenes(short: dict, out_dir: Path, handle: str, theme: str = "dark",
     kicker = short.get("kicker", "오늘의 경제")
     paths = []
 
+    # 1) 사진·차트를 먼저 만들어 둔다. render_chart가 playwright를 따로 열기 때문에
+    #    아래 브라우저 세션 안에서 호출하면 중첩 에러가 난다.
+    photos: dict[int, Path | None] = {}
+    for i, sc in enumerate(scenes, 1):
+        if sc.get("chart"):
+            # 지표는 남의 차트를 캡처하지 않고 우리가 직접 그린다
+            photos[i] = render_chart(sc["chart"], out_dir / f"chart{i:02d}.png", theme)
+        elif sc.get("photo"):
+            photos[i] = _resolve_photo(sc["photo"], out_dir, i, base_dir)
+        else:
+            photos[i] = None
+
+    # 2) 씬 렌더링
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page(viewport={"width": W, "height": H})
         for i, sc in enumerate(scenes, 1):
-            photo = sc.get("photo")
-            if photo:
-                photo = (base_dir / photo) if base_dir else Path(photo)
-                if not photo.exists():
-                    print(f"[warn] 사진을 찾지 못했습니다: {photo} — 글자만으로 만듭니다.")
-                    photo = None
+            photo = photos[i]
             html = build_scene(
                 kicker, sc["text"], sc.get("note"), handle,
                 f"{i}/{len(scenes)}", accent=sc.get("accent", "economy"), theme=theme,

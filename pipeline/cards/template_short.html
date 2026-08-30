@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@import url('_shared.css');
+html,body{ width:1080px; height:1920px; }
+body::after{ border-width:10px; }
+
+/* 사진이 있는 씬: 위 사진 / 아래 글. 없으면 글만 화면 가운데. */
+.frame{
+  position:absolute; inset:150px 80px 320px;
+  display:flex; flex-direction:column;
+}
+.photo-wrap{
+  position:relative;
+  width:100%; height:820px;
+  border-radius:28px; overflow:hidden;
+  border:1px solid var(--line);
+  background:var(--card-bg);
+  flex-shrink:0;
+  margin-bottom:56px;
+}
+.photo-wrap img{ width:100%; height:100%; object-fit:cover; display:block; }
+.photo-wrap::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, transparent 55%, rgba(14,20,32,0.55) 100%);
+}
+.credit{
+  position:absolute; left:22px; bottom:18px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:22px; color:rgba(255,255,255,0.72);
+  text-shadow:0 1px 3px rgba(0,0,0,0.6);
+}
+
+.kicker{
+  display:inline-flex; align-self:flex-start; align-items:center;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:30px; font-weight:600; letter-spacing:0.05em;
+  padding:12px 24px; border-radius:999px;
+}
+.kicker.economy{ color:var(--amber); background:var(--amber-soft); border:1px solid rgba(232,163,61,0.4); }
+.kicker.tech{ color:var(--teal); background:var(--teal-soft); border:1px solid rgba(45,212,191,0.4); }
+
+.stage{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:40px; }
+.rule-top{ width:120px; height:8px; border-radius:4px; }
+.rule-top.economy{ background:var(--amber); }
+.rule-top.tech{ background:var(--teal); }
+h1{
+  font-family:'Noto Sans KR', sans-serif;
+  font-weight:900;
+  font-size:112px;
+  line-height:1.26;
+  letter-spacing:-0.02em;
+  word-break:keep-all;
+}
+.note{
+  font-size:40px; line-height:1.55; color:var(--body);
+  font-weight:400; word-break:keep-all; max-width:880px;
+}
+.bottom{ display:flex; justify-content:space-between; align-items:flex-end; padding-top:32px; }
+.handle{ font-size:30px; }
+.step{ font-family:'IBM Plex Mono', monospace; font-size:28px; color:var(--muted); }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <!--PHOTO_START-->
+    <div class="photo-wrap">
+      <img src="__PHOTO__">
+      <!--CREDIT_START--><span class="credit">__CREDIT__</span><!--CREDIT_END-->
+    </div>
+    <!--PHOTO_END-->
+    <span class="kicker __ACCENT__">__KICKER__</span>
+    <div class="stage">
+      <div class="rule-top __ACCENT__"></div>
+      <h1>__TEXT__</h1>
+      <!--NOTE_START-->
+      <div class="note">__NOTE__</div>
+      <!--NOTE_END-->
+    </div>
+    <div class="bottom">
+      <span class="handle mono">@__HANDLE__</span>
+      <span class="step">__STEP__</span>
+    </div>
+  </div>
+</body>
+</html>

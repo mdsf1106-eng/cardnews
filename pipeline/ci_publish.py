@@ -61,7 +61,7 @@ def main():
             print(f"[error] {e}")
         sys.exit("[error] 검증 실패로 게시를 중단합니다.")
 
-    handle = os.environ.get("ACCOUNT_HANDLE", "itsue_issue")
+    handle = os.environ.get("ACCOUNT_HANDLE", "econtech.kr")
 
     # 2) 카드 생성 — 게시 자격증명이 없어도 여기까지는 항상 수행한다.
     #    (Actions 아티팩트로 PNG가 남으므로 수동 업로드가 가능하다)

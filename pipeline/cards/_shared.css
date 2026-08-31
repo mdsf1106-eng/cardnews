@@ -44,7 +44,7 @@ body::after{
   border:8px solid var(--frame);
   pointer-events:none;
 }
-.frame{ inset:72px; }
+
 
 .mono{
   font-family:'IBM Plex Mono', monospace;
@@ -88,3 +88,10 @@ body::after{
 .icon-chip.economy{ background:var(--amber-soft); border-color:rgba(232,163,61,0.3); }
 .icon-chip.tech{ background:var(--teal-soft); border-color:rgba(95,201,192,0.3); }
 .icon-chip svg{ display:block; }
+
+/* ── 가로 안전 영역 ────────────────────────────────────────────────
+   1080x1350 카드가 9:16 화면에 꽉 차게 재생되면 좌우 160px씩 잘린다
+   (가시 폭 1350x9/16 = 759px). 글자를 x=72에서 시작하면 잘려나간다.
+   그래서 좌우 여백을 160px로 잡고 본문을 가운데 정렬한다. */
+.frame{ inset:72px 160px; align-items:center; text-align:center; }
+.top-row, .bottom-row{ width:100%; }

@@ -1,0 +1,102 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@import url('_shared.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap');
+
+/* 뉴스형 표지 — 사진이 주인공, 헤드라인은 하단 고정.
+   기존 표지(텍스트 중심 + 차트)와 달리 사진이 화면 대부분을 차지한다. */
+html,body{ background:#0b0f17; }
+.photo{
+  position:absolute; inset:0;
+  background-image:url('__PHOTO__');
+  background-size:cover; background-position:center 38%;
+}
+/* 하단에서 올라오는 스크림만. 사진 상단은 그대로 보여준다. */
+.scrim{
+  position:absolute; inset:0;
+  background:linear-gradient(180deg,
+    rgba(11,15,23,0.30) 0%,
+    rgba(11,15,23,0.10) 30%,
+    rgba(11,15,23,0.72) 58%,
+    rgba(11,15,23,0.96) 78%,
+    rgba(11,15,23,0.99) 100%);
+}
+.topbar{
+  position:absolute; top:0; left:0; right:0; height:190px;
+  background:linear-gradient(180deg, rgba(11,15,23,0.85) 0%, rgba(11,15,23,0) 100%);
+}
+.eyebrow-row{
+  position:absolute; top:56px; left:160px; right:160px; z-index:3;
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:'IBM Plex Mono', monospace; font-size:23px;
+  color:rgba(244,241,232,0.72); letter-spacing:0.04em;
+}
+
+.headline-zone{
+  position:absolute; left:160px; right:160px; bottom:150px; z-index:3;
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:18px;
+}
+.kicker{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:24px; font-weight:600; letter-spacing:0.05em;
+  color:#1a1204; background:var(--amber);
+  padding:8px 16px; border-radius:6px;
+}
+h1{
+  font-family:'Noto Sans KR', sans-serif;
+  font-weight:900; font-size:74px; line-height:1.26;
+  letter-spacing:-0.035em; color:#ffffff;
+  word-break:keep-all; max-width:760px;
+  text-shadow:0 3px 20px rgba(0,0,0,0.65);
+}
+/* 강조 키워드에 형광펜 바 */
+h1 .hl, h1 .hl.economy, h1 .hl.tech{
+  color:#1a1204; background:var(--amber);
+  padding:2px 12px 6px; border-radius:4px;
+  box-decoration-break:clone; -webkit-box-decoration-break:clone;
+  text-shadow:none;
+}
+.subline{
+  font-family:'Noto Sans KR', sans-serif;
+  font-size:29px; font-weight:500; line-height:1.5;
+  color:rgba(244,241,232,0.86); max-width:880px; word-break:keep-all;
+}
+
+.footer{
+  position:absolute; left:160px; right:160px; bottom:62px; z-index:3;
+  display:flex; justify-content:space-between; align-items:flex-end;
+}
+.wm{
+  font-family:'IBM Plex Mono', monospace; font-size:23px; font-weight:600;
+  color:rgba(244,241,232,0.62); letter-spacing:0.03em;
+}
+.credit{
+  font-family:'IBM Plex Mono', monospace; font-size:15px;
+  color:rgba(244,241,232,0.42); letter-spacing:0.02em; text-align:right;
+  max-width:520px; line-height:1.4;
+}
+</style>
+</head>
+<body>
+  <div class="photo"></div>
+  <div class="scrim"></div>
+  <div class="topbar"></div>
+
+  <div class="eyebrow-row">
+    <span>DAILY BRIEF</span>
+    <span>__DATE__</span>
+  </div>
+
+  <div class="headline-zone">
+    <span class="kicker">__KICKER__</span>
+    <h1>__HEADLINE__</h1>
+    <div class="subline">__SUBHEAD__</div>
+  </div>
+
+  <div class="footer">
+    <span class="wm">@__HANDLE__</span>
+    <span class="credit">__CREDIT__</span>
+  </div>
+</body>
+</html>

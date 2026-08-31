@@ -59,7 +59,7 @@ jobs:
           IG_LONG_LIVED_TOKEN: ${{ secrets.IG_LONG_LIVED_TOKEN }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_UPLOAD_PRESET: ${{ secrets.CLOUDINARY_UPLOAD_PRESET }}
-          ACCOUNT_HANDLE: ${{ vars.ACCOUNT_HANDLE || 'itsue_issue' }}
+          ACCOUNT_HANDLE: ${{ vars.ACCOUNT_HANDLE || 'econtech.kr' }}
           NEWS_FILE: ${{ inputs.news_file }}
         run: python pipeline/ci_publish.py ${{ steps.slot.outputs.value }}
 

@@ -64,6 +64,42 @@ def _sparkline_path(points):
     return fill, line
 
 
+def _photo_src(photo) -> str:
+    """로컬 경로면 data URI로, URL이면 그대로. 렌더링 중 외부 로딩을 기다리지 않게 한다."""
+    import base64, mimetypes
+    src = str(photo)
+    if src.startswith(("http://", "https://")):
+        return src
+    pth = Path(photo)
+    if not pth.is_absolute():
+        # news.json의 경로는 레포 루트 기준으로 적는다
+        root = Path(__file__).resolve().parent.parent
+        cand = root / photo
+        if cand.exists():
+            pth = cand
+    mime = mimetypes.guess_type(pth.name)[0] or "image/jpeg"
+    return f"data:{mime};base64," + base64.b64encode(pth.read_bytes()).decode()
+
+
+def build_cover_news(date_str, headline, subhead, handle, photo, kicker="오늘의 이슈",
+                     credit=None, theme="dark", accent="economy"):
+    """사진이 주인공인 뉴스형 표지. 헤드라인은 하단에 얹는다.
+
+    photo는 로컬 경로 또는 URL. **자유 이용이 가능한 출처만 쓸 것** —
+    미국 연방정부 저작물(퍼블릭 도메인), 위키미디어 커먼즈 CC, 공공누리 제1유형 등.
+    언론사 보도사진은 안 된다.
+    """
+    tpl = _inline_css((CARDS / "template_cover_news.html").read_text(encoding="utf-8"), theme)
+    tpl = tpl.replace("__PHOTO__", _photo_src(photo))
+    tpl = tpl.replace("__DATE__", esc(date_str))
+    tpl = tpl.replace("__KICKER__", esc(kicker))
+    tpl = tpl.replace("__HEADLINE__", rich(headline, accent).replace("\n", "<br>"))
+    tpl = tpl.replace("__SUBHEAD__", rich(subhead, accent))
+    tpl = tpl.replace("__HANDLE__", esc(handle))
+    tpl = tpl.replace("__CREDIT__", esc(credit or ""))
+    return tpl
+
+
 def build_cover(date_str, headline, subhead, count, handle, hot_tag="오늘의 헤드라인", chart=None,
                  theme="dark", accent="economy"):
     """
@@ -106,7 +142,7 @@ def build_cover(date_str, headline, subhead, count, handle, hot_tag="오늘의 �
 
 
 def build_item(index, total, category, title, summary, source, handle,
-               theme="dark", icon=None, sowhat=None):
+               theme="dark", icon=None, sowhat=None, photo=None, photo_credit=None):
     """sowhat: '그래서 이게 무슨 뜻인지' 해석 한 줄.
     없으면 해석 블록을 통째로 제거한다(하위호환)."""
     catclass = "economy" if category == "경제" else "tech"
@@ -124,6 +160,16 @@ def build_item(index, total, category, title, summary, source, handle,
     tpl = tpl.replace("__SOURCE__", esc(source))
     tpl = tpl.replace("__HANDLE__", esc(handle))
     tpl = tpl.replace("__ICON_SVG__", _icon(icon or "default", icon_color))
+    if photo:
+        tpl = tpl.replace("__BODYCLS__", "has-photo")
+        tpl = tpl.replace("__PHOTO__", _photo_src(photo))
+        if photo_credit:
+            tpl = tpl.replace("__PCREDIT__", esc(photo_credit))
+        else:
+            tpl = re.sub(r"<!--PCREDIT_START-->.*?<!--PCREDIT_END-->", "", tpl, flags=re.S)
+    else:
+        tpl = tpl.replace("__BODYCLS__", "")
+        tpl = re.sub(r"<!--PHOTO_START-->.*?<!--PHOTO_END-->", "", tpl, flags=re.S)
     if sowhat:
         tpl = tpl.replace("__SOWHAT__", rich(sowhat, catclass))
     else:
@@ -201,7 +247,7 @@ def generate(news: dict, out_dir: Path, handle: str) -> list[Path]:
         def shot(html_str, name, fit=None):
             tmp = out_dir / f"_tmp_{name}.html"
             tmp.write_text(html_str, encoding="utf-8")
-            page.goto(f"file://{tmp}")
+            page.goto(f"file://{tmp.resolve()}")
             page.evaluate("() => document.fonts.ready")  # 웹폰트 로딩 완료 대기
             if fit:
                 _fit_block(page, *fit)
@@ -212,16 +258,29 @@ def generate(news: dict, out_dir: Path, handle: str) -> list[Path]:
 
         # 01 표지 — 그리드 썸네일로 정사각 중앙크롭되므로 안전영역(135~1215) 안에 맞춘다
         seq += 1
-        paths.append(shot(
-            build_cover(
-                news["date"], news["headline"], news["subhead"], n_items, handle,
-                hot_tag=news.get("hot_tag", "오늘의 헤드라인"),
-                chart=news.get("chart"),
-                theme=theme,
-            ),
-            f"{seq:02d}_cover",
-            fit=(".title-block", "h1", SAFE_TOP, SAFE_BOTTOM, 60, 96),
-        ))
+        cover_photo = news.get("cover_photo")
+        if cover_photo:
+            # 사진형 표지 — 자유 이용 가능한 출처만 (연방정부 PD, 커먼즈 CC, 공공누리)
+            paths.append(shot(
+                build_cover_news(
+                    news["date"], news["headline"], news["subhead"], handle, cover_photo,
+                    kicker=news.get("hot_tag", "오늘의 이슈"),
+                    credit=news.get("cover_credit"), theme=theme,
+                ),
+                f"{seq:02d}_cover",
+                fit=(".headline-zone", "h1", SAFE_TOP, SAFE_BOTTOM, 52, 74),
+            ))
+        else:
+            paths.append(shot(
+                build_cover(
+                    news["date"], news["headline"], news["subhead"], n_items, handle,
+                    hot_tag=news.get("hot_tag", "오늘의 헤드라인"),
+                    chart=news.get("chart"),
+                    theme=theme,
+                ),
+                f"{seq:02d}_cover",
+                fit=(".title-block", "h1", SAFE_TOP, SAFE_BOTTOM, 60, 88),
+            ))
 
         # 02 훅 — 그리드에 안 잡히므로 캔버스 전체(64~1286)를 쓴다
         if hook:
@@ -240,7 +299,8 @@ def generate(news: dict, out_dir: Path, handle: str) -> list[Path]:
             paths.append(shot(
                 build_item(seq, total_cards, item["category"], item["title"],
                            item["summary"], item["source"], handle, theme=theme,
-                           icon=item.get("icon"), sowhat=item.get("sowhat")),
+                           icon=item.get("icon"), sowhat=item.get("sowhat"),
+                           photo=item.get("photo"), photo_credit=item.get("photo_credit")),
                 f"{seq:02d}_item",
             ))
 

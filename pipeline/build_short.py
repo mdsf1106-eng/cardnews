@@ -74,6 +74,7 @@ def build_scene(kicker, text, note, handle, step, accent="economy", theme="dark"
 
     if photo:
         tpl = tpl.replace("__PHOTO__", _data_uri(Path(photo)))
+        tpl = tpl.replace("__PHOTOCLS__", "credited" if credit else "")
         if credit:
             tpl = tpl.replace("__CREDIT__", esc(credit))
         else:
@@ -81,6 +82,7 @@ def build_scene(kicker, text, note, handle, step, accent="economy", theme="dark"
     else:
         tpl = re.sub(r"<!--PHOTO_START-->.*?<!--PHOTO_END-->", "", tpl, flags=re.S)
 
+    tpl = tpl.replace("__BODYCLS__", "has-photo" if photo else "")
     tpl = tpl.replace("__ACCENT__", accent)
     tpl = tpl.replace("__KICKER__", esc(kicker))
     tpl = tpl.replace("__TEXT__", rich(text, accent).replace("\n", "<br>"))
@@ -120,7 +122,7 @@ def render_scenes(short: dict, out_dir: Path, handle: str, theme: str = "dark",
         for i, sc in enumerate(scenes, 1):
             photo = photos[i]
             html = build_scene(
-                kicker, sc["text"], sc.get("note"), handle,
+                sc.get("kicker", kicker), sc["text"], sc.get("note"), handle,
                 f"{i}/{len(scenes)}", accent=sc.get("accent", "economy"), theme=theme,
                 photo=photo, credit=sc.get("credit"),
             )
@@ -129,9 +131,11 @@ def render_scenes(short: dict, out_dir: Path, handle: str, theme: str = "dark",
             page.goto(f"file://{tmp.resolve()}")
             page.evaluate("() => document.fonts.ready")
             # 글자가 많은 씬은 자동으로 줄여 안전 구간 안에 넣는다
-            top = SAFE_TOP if not photo else 1030   # 사진 아래부터가 글 영역
+            # 글이 위, 사진이 아래다. 사진이 있으면 글은 상단 구간만 쓴다.
+            top = SAFE_TOP
+            bottom = SAFE_BOTTOM if not photo else 780
             max_font = MAX_FONT_PHOTO if photo else MAX_FONT_TEXT
-            _fit_block(page, ".stage", "h1", top, SAFE_BOTTOM, 48, max_font)
+            _fit_block(page, ".stage", "h1", top, bottom, 44, max_font)
             out = out_dir / f"s{i:02d}.png"
             page.screenshot(path=str(out))
             tmp.unlink()

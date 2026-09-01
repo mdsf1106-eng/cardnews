@@ -38,11 +38,27 @@ h2{
   font-size:29px; line-height:1.58; font-weight:500;
   color:var(--ink); max-width:740px; word-break:keep-all;
 }
+.photo-band{
+  width:100%; height:420px; margin-top:4px;
+  border-radius:22px; overflow:hidden;
+  border:1px solid var(--line); background:var(--card-bg);
+  flex-shrink:0; position:relative;
+}
+.photo-band img{ width:100%; height:100%; object-fit:cover; display:block; }
+.photo-band .credit{
+  position:absolute; right:16px; bottom:12px;
+  font-family:'IBM Plex Mono', monospace; font-size:18px;
+  color:rgba(255,255,255,0.75); text-shadow:0 1px 3px rgba(0,0,0,0.7);
+}
+/* 사진이 들어가면 글 영역이 좁아지니 아이콘을 빼고 여백을 줄인다 */
+body.has-photo .icon-chip{ display:none; }
+body.has-photo .body-block{ gap:20px; padding-top:16px; }
+body.has-photo .sowhat{ padding-top:18px; }
 .source{ font-size:20px; color:var(--muted); }
 .bottom-row{ display:flex; justify-content:space-between; align-items:flex-end; }
 </style>
 </head>
-<body>
+<body class="__BODYCLS__">
   <div class="frame">
     <div class="top-row">
       <span class="tag __CATCLASS__">__CATLABEL__</span>
@@ -64,6 +80,12 @@ h2{
         <span class="txt">__SOWHAT__</span>
       </div>
       <!--SOWHAT_END-->
+      <!--PHOTO_START-->
+      <div class="photo-band">
+        <img src="__PHOTO__">
+        <!--PCREDIT_START--><span class="credit">__PCREDIT__</span><!--PCREDIT_END-->
+      </div>
+      <!--PHOTO_END-->
     </div>
 
     <div class="rule"></div>
